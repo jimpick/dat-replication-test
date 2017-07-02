@@ -2,46 +2,38 @@ const html = require('pelo')
 
 class NewArchive {
 
-  create(title) {
-    this.title = title
-    const promise = DatArchive.create({
-      title,
-      description: 'Enter your description here.'
-    })
-    .then(archive => {
+  async create(defaultTitle) {
+    try {
+      const archive = await DatArchive.create({
+        title: defaultTitle,
+        description: 'Enter your description here.'
+      })
       this.archive = archive
       console.log('New archive:', archive.url)
-    })
-    .then(() => this.archive.getInfo())
-    .then(info => {
+      const info = await archive.getInfo()
+      this.info = info
       const { title, description } = info
       this.title = title
       this.description = description
-      this.info = info
-      return this.generateSite()
-    })
-    .then(() => this.info)
-    .catch(error => {
+      await this.generateSite()
+      return info
+    } catch (error) {
       // FIXME: A bit confused what is happening here
-      // console.log('New Archive Error', error)
+      console.log('New Archive Error', error)
       console.log('New Archive: User denied permission')
-      return null
-    })
-    return promise
+    }
   }
 
-  generateSite() {
+  async generateSite() {
     const { title, description, archive } = this
-    const promise =
-      archive.writeFile(
-        'index.html',
-        this.indexHtml({
-          title,
-          description
-        })
-      )
-      .then(() => archive.commit())
-    return promise
+    await archive.writeFile(
+      'index.html',
+      this.indexHtml({
+        title,
+        description
+      })
+    )
+    await archive.commit()
   }
 
   indexHtml({ title, description }) {

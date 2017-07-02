@@ -12,8 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "choo": "^5.6.2",
-    "pelo": "0.0.2",
-    "promise-each": "^2.2.0"
+    "pelo": "0.0.2"
   },
   "devDependencies": {
     "browserify": "^14.4.0",
