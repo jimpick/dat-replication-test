@@ -2,26 +2,7 @@
   {
     "title": "My Awesome DAT Web Site #1",
     "description": "Enter your description here.",
-    "url": "dat://4d7b88a9fb5d1aeef05fd577a3890aaaba7a944db3f2d3bb784089136639599d"
-  },
-  {
-    "title": "My Awesome DAT Web Site #2",
-    "description": "Enter your description here.",
-    "url": "dat://b8707b51396e17eb8900d459b938209b70eb906c42197aaf57e794b808767b11"
-  },
-  {
-    "title": "My Awesome DAT Web Site #3",
-    "description": "Enter your description here.",
-    "url": "dat://96669bc8da75fb3d2b7a6d92504e01d4f37533c111016aabb90d09fb8cde7f22"
-  },
-  {
-    "title": "Jim's Awesome DAT Web Site #4",
-    "description": "This is my description!",
-    "url": "dat://d1651ea0708793613546b87b22340f02dc5147e0e14ba9afd53577d147196b76"
-  },
-  {
-    "title": "My Awesome DAT Web Site #5",
-    "description": "Enter your description here.",
-    "url": "dat://5fd1ab8f478f5406c433a3613f6904f7ecd7e8b3cdbf643c1063e9ff280804c3"
+    "url": "dat://a8e1acfc6534dc39d929af33189bf9dbe1cb6eb57b955bb7ee2fe969ed937f9d",
+    "createdAt": "2017-07-02T21:38:34.604Z"
   }
 ]

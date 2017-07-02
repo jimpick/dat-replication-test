@@ -1,3 +1,4 @@
+const html = require('choo/html')
 const choo = require('choo')
 const listView = require('./listView')
 const SitesModel = require('./sitesModel')
@@ -5,8 +6,8 @@ const NewArchive = require('./newArchive')
 
 const app = choo({ href: false })
 app.use(store)
-app.route('/', listView)
-app.mount('ul#siteList')
+app.route('/', contentView)
+app.mount('div#content')
 
 async function store (state, emitter) {
   state.sites = []
@@ -20,13 +21,27 @@ async function store (state, emitter) {
   emitter.on('update', update)
 }
 
+function contentView (state, emit) {
+  return html`
+    <div id="content">
+      ${createDatButton(state, emit)}
+
+      ${listView(state, emit)}
+    </div>
+  `
+}
+
+function createDatButton (state, emit) {
+  return html`
+    <button id="createDat">Create Dat Site</button>
+  `
+}
+
 const makeClickHandler = (sitesModel) => {
   const url = document.location.href
   const func = (state, emitter) => {
     const buttonEl = document.querySelector('#createDat')
     buttonEl.addEventListener('click', async event => {
-      const now = Date.now()
-      const file = `/sites/${now}.json`
       const { sites } = state
       try {
         const newArchive = new NewArchive()
@@ -35,7 +50,7 @@ const makeClickHandler = (sitesModel) => {
           defaultTitle,
           createdFrom: url
         })
-        await sitesModel.writeFile(file, info)
+        await sitesModel.pushSite(info)
         emitter.emit('update')
       } catch (error) {
         console.log('Create error', error)
@@ -59,12 +74,3 @@ if (!window.DatArchive) {
   run()
 }
 
-function timer() {
-  const promise = new Promise((resolve, reject) => {
-    setTimeout(() => {
-      console.log('Timer finished')
-      resolve()
-    }, 1000)
-  })
-  return promise
-}

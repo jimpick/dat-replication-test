@@ -1,3 +1,5 @@
+const uuidv1 = require('uuid/v1')
+
 const sitesDir = 'sites'
 
 class SitesModel {
@@ -13,12 +15,16 @@ class SitesModel {
     }
   }
 
-  async writeFile(file, info) {
+  async pushSite(info) {
+    const createdAt = new Date().toISOString()
+    const id = uuidv1() // Timestamped
+    const file = `${sitesDir}/${id}.json`
     const { title, description, url } = info
     const data = JSON.stringify({
       title,
       description,
-      url
+      url,
+      createdAt
     }, null, 2)
     await this.archive.writeFile(file, data)
     console.log(`Wrote ${file}`)
