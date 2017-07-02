@@ -5,9 +5,7 @@ function listView (state, emit) {
   return html`
     <ul id="siteList">
       ${sites.map(site => {
-        console.log('JimX', site)
-        const { title, file } = site
-        const url = `/sites/${file}`
+        const { title, url } = site
         return html`
           <li>
             <a href="${url}">${title}</a>

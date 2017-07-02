@@ -23,7 +23,6 @@ function store (state, emitter) {
 }
 
 const buttonEl = document.querySelector('#createDat')
-const publishButtonEl = document.querySelector('#publish')
 
 if (!window.DatArchive) {
   buttonEl.remove()
@@ -40,27 +39,14 @@ if (!window.DatArchive) {
           const newArchive = new NewArchive()
           const defaultTitle = `Title ${now}`
           newArchive.create(defaultTitle)
-            .then(info => {
-              if (url) {
-                return archive.writeFile(file, info)
-              }
-            })
-            .then(() => {
-              emitter.emit('update')
-            })
+            .then(info => url && archive.writeFile(file, info))
+            .then(() => emitter.emit('update'))
             .catch(error => {
               console.log('Create error', error)
             })
         })
       }
       app.use(clickHandler)
-
-      publishButtonEl.addEventListener('click', event => {
-        archive.publish()
-          .then(result => {
-            console.log('Published', result)
-          })
-      })
     })
 }
 

@@ -35,30 +35,32 @@ class Archive {
 
   updateSitesJson() {
     const sites = []
-    const promise = this.archive.readdir(sitesDir)
+    const promise =
+      this.archive.readdir(sitesDir)
       .then(files => {
-        console.log('Jim1', files)
         return files
-      }).then(each(file => {
-        console.log('Jim', file)
-        sites.push({
-          title: file,
-          file
-        })
+      })
+      .then(each(file => {
+        const promise =
+          this.archive.readFile(`${sitesDir}/${file}`)
+          .then(contents => {
+            try {
+              const data = JSON.parse(contents)
+              sites.push(data)
+            } catch (error) {
+              console.log('Error parsing file', file, error)
+            }
+          })
+        return promise
       }))
       .then(() => {
-        return (
-          this.archive.writeFile(
-            'sites.json',
-            JSON.stringify(sites)
-          )
+        return this.archive.writeFile(
+          'sites.json',
+          JSON.stringify(sites, null, 2)
         )
       })
+      .then(() => this.archive.commit())
     return promise
-  }
-
-  publish() {
-    return this.archive.commit()
   }
 
 }
