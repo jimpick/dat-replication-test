@@ -15,18 +15,12 @@ function store (state, emitter) {
       emitter.emit('render')
     })
   }
-  update()
+  update() // Initial load
   emitter.on('update', update)
 }
 
 function readFilesJson () {
-  const promise = fetch('/files.json')
-    .then(response => response.json())
-    .then(files => {
-      console.log('Jim json', files)
-      return files
-    })
-  return promise
+  return fetch('/files.json').then(response => response.json())
 }
 
 function listView (state, emit) {
@@ -77,30 +71,30 @@ if (!window.DatArchive) {
       }
       return archive.mkdir('/test1')
     })
-
-  function clickHandler(state, emitter) {
-    buttonEl.addEventListener('click', event => {
-      const now = Date.now()
-      const file = `/test1/${now}.txt`
-      archive.writeFile(file, String(now))
-        .then(() => {
-          console.log(`Wrote ${file}`)
-          return updateFilesJson()
+    .then(() => {
+      function clickHandler(state, emitter) {
+        buttonEl.addEventListener('click', event => {
+          const now = Date.now()
+          const file = `/test1/${now}.txt`
+          archive.writeFile(file, String(now))
+            .then(() => {
+              console.log(`Wrote ${file}`)
+              return updateFilesJson()
+            })
+            .then(() => {
+              emitter.emit('update')
+            })
         })
-        .then(() => {
-          emitter.emit('update')
-        })
-    })
-  }
-  app.use(clickHandler)
-  // await archive.mkdir('/subdir')
+      }
+      app.use(clickHandler)
 
-  publishButtonEl.addEventListener('click', event => {
-    archive.commit()
-      .then(result => {
-        console.log('Published', result)
+      publishButtonEl.addEventListener('click', event => {
+        archive.commit()
+          .then(result => {
+            console.log('Published', result)
+          })
       })
-  })
+    })
 
 }
 
