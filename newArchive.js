@@ -6,7 +6,7 @@ class NewArchive {
     this.title = title
     const promise = DatArchive.create({
       title,
-      description: title
+      description: 'Enter your description here.'
     })
     .then(archive => {
       this.archive = archive

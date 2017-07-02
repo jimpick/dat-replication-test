@@ -20,15 +20,16 @@ async function store (state, emitter) {
   emitter.on('update', update)
 }
 
-const makeClickHandler = (archive) => {
-  const func = (_, emitter) => {
+const makeClickHandler = (sitesModel) => {
+  const func = (state, emitter) => {
     const buttonEl = document.querySelector('#createDat')
     buttonEl.addEventListener('click', async event => {
       const now = Date.now()
       const file = `/sites/${now}.json`
+      const { sites } = state
       try {
         const newArchive = new NewArchive()
-        const defaultTitle = `Title ${now}`
+        const defaultTitle = `My Awesome DAT Web Site #${sites.length + 1}`
         const info = await newArchive.create(defaultTitle)
         await sitesModel.writeFile(file, info)
         emitter.emit('update')
@@ -42,9 +43,9 @@ const makeClickHandler = (archive) => {
 
 async function run () {
   const url = document.location.href
-  const archive = new Archive(url)
-  await archive.init()
-  app.use(makeClickHandler(archive))
+  const sitesModel = new SitesModel(url)
+  await sitesModel.init()
+  app.use(makeClickHandler(sitesModel))
 }
 
 if (!window.DatArchive) {
