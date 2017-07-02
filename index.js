@@ -1,6 +1,6 @@
 const choo = require('choo')
 const listView = require('./listView')
-const Archive = require('./archive')
+const SitesModel = require('./sitesModel')
 const NewArchive = require('./newArchive')
 
 const app = choo({ href: false })
@@ -30,7 +30,7 @@ const makeClickHandler = (archive) => {
         const newArchive = new NewArchive()
         const defaultTitle = `Title ${now}`
         const info = await newArchive.create(defaultTitle)
-        await archive.writeFile(file, info)
+        await sitesModel.writeFile(file, info)
         emitter.emit('update')
       } catch (error) {
         console.log('Create error', error)
