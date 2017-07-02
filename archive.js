@@ -16,7 +16,11 @@ class Archive {
     return promise
   }
 
-  writeFile(file, data) {
+  writeFile(file, title, url) {
+    const data = JSON.stringify({
+      title,
+      url
+    })
     const promise = this.archive.writeFile(file, data)
       .then(() => {
         console.log(`Wrote ${file}`)

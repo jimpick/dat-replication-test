@@ -1,8 +1,9 @@
 const choo = require('choo')
 const listView = require('./listView')
 const Archive = require('./archive')
+const NewArchive = require('./newArchive')
 
-const app = choo()
+const app = choo({ href: false })
 app.use(store)
 app.route('/', listView)
 app.mount('ul#fileList')
@@ -35,8 +36,13 @@ if (!window.DatArchive) {
       function clickHandler(state, emitter) {
         buttonEl.addEventListener('click', event => {
           const now = Date.now()
-          const file = `/test1/${now}.txt`
-          archive.writeFile(file, String(now))
+          const file = `/test1/${now}.json`
+          const newArchive = new NewArchive()
+          const title = `Title ${now}`
+          newArchive.create(title)
+            .then(url => {
+              return archive.writeFile(file, title, url)
+            })
             .then(() => {
               emitter.emit('update')
             })
