@@ -4,8 +4,8 @@
   "description": "",
   "main": "test1.js",
   "scripts": {
-    "build": "browserify -g yo-yoify index.js -o bundle.js",
-    "watch": "watchify -g yo-yoify index.js -o bundle.js",
+    "build": "browserify -t browserify-nodent -g yo-yoify index.js -o bundle.js",
+    "watch": "watchify -g yo-yoify --debug index.js -o bundle.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "browserify": "^14.4.0",
+    "browserify-nodent": "^1.0.22",
     "watchify": "^3.9.0",
     "yo-yoify": "^3.7.3"
   }
