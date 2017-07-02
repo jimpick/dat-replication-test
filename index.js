@@ -21,6 +21,7 @@ async function store (state, emitter) {
 }
 
 const makeClickHandler = (sitesModel) => {
+  const url = document.location.href
   const func = (state, emitter) => {
     const buttonEl = document.querySelector('#createDat')
     buttonEl.addEventListener('click', async event => {
@@ -30,7 +31,10 @@ const makeClickHandler = (sitesModel) => {
       try {
         const newArchive = new NewArchive()
         const defaultTitle = `My Awesome DAT Web Site #${sites.length + 1}`
-        const info = await newArchive.create(defaultTitle)
+        const info = await newArchive.create({
+          defaultTitle,
+          createdFrom: url
+        })
         await sitesModel.writeFile(file, info)
         emitter.emit('update')
       } catch (error) {

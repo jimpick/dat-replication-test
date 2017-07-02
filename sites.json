@@ -18,5 +18,10 @@
     "title": "Jim's Awesome DAT Web Site #4",
     "description": "This is my description!",
     "url": "dat://d1651ea0708793613546b87b22340f02dc5147e0e14ba9afd53577d147196b76"
+  },
+  {
+    "title": "My Awesome DAT Web Site #5",
+    "description": "Enter your description here.",
+    "url": "dat://5fd1ab8f478f5406c433a3613f6904f7ecd7e8b3cdbf643c1063e9ff280804c3"
   }
 ]

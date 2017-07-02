@@ -2,8 +2,9 @@ const html = require('pelo')
 
 class NewArchive {
 
-  async create(defaultTitle) {
+  async create({ defaultTitle, createdFrom }) {
     try {
+      this.createdFrom = createdFrom
       const archive = await DatArchive.create({
         title: defaultTitle,
         description: 'Enter your description here.'
@@ -25,18 +26,19 @@ class NewArchive {
   }
 
   async generateSite() {
-    const { title, description, archive } = this
+    const { title, description, createdFrom, archive } = this
     await archive.writeFile(
       'index.html',
       this.indexHtml({
         title,
-        description
+        description,
+        createdFrom
       })
     )
     await archive.commit()
   }
 
-  indexHtml({ title, description }) {
+  indexHtml({ title, description, createdFrom }) {
     return html`
       <html>
         <head>
@@ -47,6 +49,10 @@ class NewArchive {
           <p>
             ${description}
           </p>
+          <footer>
+            Created from:
+            <a href="${createdFrom}">${createdFrom}</a>
+          </footer>
         </body>
       </html>
     `.toString()
