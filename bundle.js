@@ -1,5 +1,7 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-const filesDir = 'test1'
+const each = require('promise-each')
+
+const sitesDir = 'sites'
 class Archive {
   constructor(url) {
     this.url = url
@@ -9,34 +11,47 @@ class Archive {
   init() {
     const promise = this.archive.readdir('/')
       .then(topFiles => {
-        if (topFiles.includes(filesDir)) {
+        if (topFiles.includes(sitesDir)) {
           return
         }
-        return archive.mkdir(filesDir)
+        return this.archive.mkdir(sitesDir)
       })
     return promise
   }
 
-  writeFile(file, title, url) {
+  writeFile(file, info) {
+    const { title, description, url } = info
     const data = JSON.stringify({
       title,
+      description,
       url
-    })
+    }, null, 2)
     const promise = this.archive.writeFile(file, data)
       .then(() => {
         console.log(`Wrote ${file}`)
-        return this.updateFilesJson()
+        return this.updateSitesJson()
       })
     return promise
   }
 
-  updateFilesJson() {
-    const promise = this.archive.readdir(filesDir)
+  updateSitesJson() {
+    const sites = []
+    const promise = this.archive.readdir(sitesDir)
       .then(files => {
+        console.log('Jim1', files)
+        return files
+      }).then(each(file => {
+        console.log('Jim', file)
+        sites.push({
+          title: file,
+          file
+        })
+      }))
+      .then(() => {
         return (
           this.archive.writeFile(
-            'files.json',
-            JSON.stringify(files)
+            'sites.json',
+            JSON.stringify(sites)
           )
         )
       })
@@ -51,7 +66,7 @@ class Archive {
 
 module.exports = Archive
 
-},{}],2:[function(require,module,exports){
+},{"promise-each":21}],2:[function(require,module,exports){
 const choo = require('choo')
 const listView = require('./listView')
 const Archive = require('./archive')
@@ -60,15 +75,15 @@ const NewArchive = require('./newArchive')
 const app = choo({ href: false })
 app.use(store)
 app.route('/', listView)
-app.mount('ul#fileList')
+app.mount('ul#siteList')
 
 function store (state, emitter) {
-  state.files = []
+  state.sites = []
   function update() {
-    fetch('/files.json')
+    fetch('/sites.json')
       .then(response => response.json())
-      .then(files => {
-        state.files = files
+      .then(sites => {
+        state.sites = sites
         emitter.emit('render')
       })
   }
@@ -90,15 +105,20 @@ if (!window.DatArchive) {
       function clickHandler(state, emitter) {
         buttonEl.addEventListener('click', event => {
           const now = Date.now()
-          const file = `/test1/${now}.json`
+          const file = `/sites/${now}.json`
           const newArchive = new NewArchive()
-          const title = `Title ${now}`
-          newArchive.create(title)
-            .then(url => {
-              return archive.writeFile(file, title, url)
+          const defaultTitle = `Title ${now}`
+          newArchive.create(defaultTitle)
+            .then(info => {
+              if (url) {
+                return archive.writeFile(file, info)
+              }
             })
             .then(() => {
               emitter.emit('update')
+            })
+            .catch(error => {
+              console.log('Create error', error)
             })
         })
       }
@@ -114,34 +134,37 @@ if (!window.DatArchive) {
 }
 
 
-},{"./archive":1,"./listView":3,"./newArchive":4,"choo":8}],3:[function(require,module,exports){
+},{"./archive":1,"./listView":3,"./newArchive":4,"choo":9}],3:[function(require,module,exports){
 const html = require('choo/html')
 
 function listView (state, emit) {
-  const { files } = state
+  const { sites } = state
   return (function () {
       
       var ac = require('/Users/jim/Sites/dat-replication-test/node_modules/yo-yoify/lib/appendChild.js')
       var bel0 = document.createElement("ul")
-bel0.setAttribute("id", "fileList")
+bel0.setAttribute("id", "siteList")
 ac(bel0, ["\n      ",arguments[0],"\n    "])
       return bel0
-    }(files.map(file => {
+    }(sites.map(site => {
+        console.log('JimX', site)
+        const { title, file } = site
+        const url = `/sites/${file}`
         return (function () {
       
       var ac = require('/Users/jim/Sites/dat-replication-test/node_modules/yo-yoify/lib/appendChild.js')
       var bel1 = document.createElement("li")
 var bel0 = document.createElement("a")
-bel0.setAttribute("href", "/test1/" + arguments[0])
+bel0.setAttribute("href", arguments[0])
 ac(bel0, [arguments[1]])
 ac(bel1, ["\n            ",bel0,"\n          "])
       return bel1
-    }(file,file))
+    }(url,title))
       })))
 }
 
 module.exports = listView
-},{"/Users/jim/Sites/dat-replication-test/node_modules/yo-yoify/lib/appendChild.js":27,"choo/html":7}],4:[function(require,module,exports){
+},{"/Users/jim/Sites/dat-replication-test/node_modules/yo-yoify/lib/appendChild.js":29,"choo/html":8}],4:[function(require,module,exports){
 class NewArchive {
   constructor() {
   }
@@ -151,10 +174,17 @@ class NewArchive {
     const promise = DatArchive.create({
       title,
       description: title
-    }).then(archive => {
+    })
+    .then(archive => {
       this.archive = archive
       console.log('Jim new archive', archive)
-      return archive.url
+      return archive.getInfo()
+    })
+    .catch(error => {
+      // FIXME: A bit confused what is happening here
+      // console.log('New Archive Error', error)
+      console.log('New Archive: User denied permission')
+      return null
     })
     return promise
   }
@@ -163,6 +193,9 @@ class NewArchive {
 module.exports = NewArchive
 
 },{}],5:[function(require,module,exports){
+module.exports = Promise;
+
+},{}],6:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -656,7 +689,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"util/":22}],6:[function(require,module,exports){
+},{"util/":24}],7:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -842,10 +875,10 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 module.exports = {}
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var documentReady = require('document-ready')
 var nanohistory = require('nanohistory')
 var nanorouter = require('nanorouter')
@@ -985,7 +1018,7 @@ function createLocation () {
   return pathname + hash
 }
 
-},{"assert":5,"document-ready":9,"nanobus":10,"nanohistory":11,"nanohref":12,"nanomorph":13,"nanomount":16,"nanoraf":17,"nanorouter":18}],9:[function(require,module,exports){
+},{"assert":6,"document-ready":10,"nanobus":11,"nanohistory":12,"nanohref":13,"nanomorph":14,"nanomount":17,"nanoraf":18,"nanorouter":19}],10:[function(require,module,exports){
 'use strict'
 
 var assert = require('assert')
@@ -1004,7 +1037,7 @@ function ready (callback) {
   })
 }
 
-},{"assert":5}],10:[function(require,module,exports){
+},{"assert":6}],11:[function(require,module,exports){
 var nanotiming = require('nanotiming')
 var assert = require('assert')
 
@@ -1152,7 +1185,7 @@ Nanobus.prototype._emit = function (arr, eventName, data) {
   }
 }
 
-},{"assert":5,"nanotiming":19}],11:[function(require,module,exports){
+},{"assert":6,"nanotiming":20}],12:[function(require,module,exports){
 var assert = require('assert')
 
 module.exports = history
@@ -1166,7 +1199,7 @@ function history (cb) {
   }
 }
 
-},{"assert":5}],12:[function(require,module,exports){
+},{"assert":6}],13:[function(require,module,exports){
 var assert = require('assert')
 
 module.exports = href
@@ -1202,7 +1235,7 @@ function href (cb, root) {
   }
 }
 
-},{"assert":5}],13:[function(require,module,exports){
+},{"assert":6}],14:[function(require,module,exports){
 var assert = require('assert')
 var morph = require('./lib/morph')
 var rootLabelRegex = /^data-onloadid/
@@ -1297,7 +1330,7 @@ function persistStatefulRoot (newNode, oldNode) {
   }
 }
 
-},{"./lib/morph":15,"assert":5}],14:[function(require,module,exports){
+},{"./lib/morph":16,"assert":6}],15:[function(require,module,exports){
 module.exports = [
   // attribute events (can be set with attributes)
   'onclick',
@@ -1337,7 +1370,7 @@ module.exports = [
   'onfocusout'
 ]
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var events = require('./events')
 var eventsLength = events.length
 
@@ -1512,7 +1545,7 @@ function updateAttribute (newNode, oldNode, name) {
   }
 }
 
-},{"./events":14}],16:[function(require,module,exports){
+},{"./events":15}],17:[function(require,module,exports){
 var nanomorph = require('nanomorph')
 var assert = require('assert')
 
@@ -1534,7 +1567,7 @@ function nanomount (target, newTree) {
     target.outerHTML.nodeName + '.')
 }
 
-},{"assert":5,"nanomorph":13}],17:[function(require,module,exports){
+},{"assert":6,"nanomorph":14}],18:[function(require,module,exports){
 'use strict'
 
 var assert = require('assert')
@@ -1571,7 +1604,7 @@ function nanoraf (render, raf) {
   }
 }
 
-},{"assert":5}],18:[function(require,module,exports){
+},{"assert":6}],19:[function(require,module,exports){
 var wayfarer = require('wayfarer')
 
 var isLocalFile = (/file:\/\//.test(typeof window === 'object' &&
@@ -1631,7 +1664,7 @@ function pathname (route, isElectron) {
   return route.replace(suffix, '').replace(normalize, '/')
 }
 
-},{"wayfarer":23}],19:[function(require,module,exports){
+},{"wayfarer":25}],20:[function(require,module,exports){
 var assert = require('assert')
 
 module.exports = Nanotiming
@@ -1657,7 +1690,27 @@ Nanotiming.prototype.end = function (partial) {
   window.performance.measure(name, name + '-start', name + '-end')
 }
 
-},{"assert":5}],20:[function(require,module,exports){
+},{"assert":6}],21:[function(require,module,exports){
+const Promise = require('any-promise')
+const assert = require('assert')
+
+module.exports = each
+
+// apply a function to all values
+// should only be used for side effects
+// (fn) -> prom
+function each (fn) {
+  assert.equal(typeof fn, 'function')
+  return function (arr) {
+    arr = Array.isArray(arr) ? arr : [arr]
+
+    return arr.reduce(function (prev, curr, i) {
+      return prev.then(function () { return fn(curr, i, arr.length) })
+    }, Promise.resolve()).then(function () {})
+  }
+}
+
+},{"any-promise":5,"assert":6}],22:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -1682,14 +1735,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],21:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],22:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -2279,7 +2332,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":21,"_process":6,"inherits":20}],23:[function(require,module,exports){
+},{"./support/isBuffer":23,"_process":7,"inherits":22}],25:[function(require,module,exports){
 var assert = require('assert')
 var trie = require('./trie')
 
@@ -2346,7 +2399,7 @@ function Wayfarer (dft) {
   }
 }
 
-},{"./trie":24,"assert":5}],24:[function(require,module,exports){
+},{"./trie":26,"assert":6}],26:[function(require,module,exports){
 var mutate = require('xtend/mutable')
 var assert = require('assert')
 var xtend = require('xtend')
@@ -2485,7 +2538,7 @@ Trie.prototype.mount = function (route, trie) {
   }
 }
 
-},{"assert":5,"xtend":25,"xtend/mutable":26}],25:[function(require,module,exports){
+},{"assert":6,"xtend":27,"xtend/mutable":28}],27:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -2506,7 +2559,7 @@ function extend() {
     return target
 }
 
-},{}],26:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -2525,7 +2578,7 @@ function extend(target) {
     return target
 }
 
-},{}],27:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 module.exports = function yoyoifyAppendChild (el, childs) {
   for (var i = 0; i < childs.length; i++) {
     var node = childs[i]

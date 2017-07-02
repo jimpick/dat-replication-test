@@ -6,15 +6,15 @@ const NewArchive = require('./newArchive')
 const app = choo({ href: false })
 app.use(store)
 app.route('/', listView)
-app.mount('ul#fileList')
+app.mount('ul#siteList')
 
 function store (state, emitter) {
-  state.files = []
+  state.sites = []
   function update() {
-    fetch('/files.json')
+    fetch('/sites.json')
       .then(response => response.json())
-      .then(files => {
-        state.files = files
+      .then(sites => {
+        state.sites = sites
         emitter.emit('render')
       })
   }
@@ -36,15 +36,20 @@ if (!window.DatArchive) {
       function clickHandler(state, emitter) {
         buttonEl.addEventListener('click', event => {
           const now = Date.now()
-          const file = `/test1/${now}.json`
+          const file = `/sites/${now}.json`
           const newArchive = new NewArchive()
-          const title = `Title ${now}`
-          newArchive.create(title)
-            .then(url => {
-              return archive.writeFile(file, title, url)
+          const defaultTitle = `Title ${now}`
+          newArchive.create(defaultTitle)
+            .then(info => {
+              if (url) {
+                return archive.writeFile(file, info)
+              }
             })
             .then(() => {
               emitter.emit('update')
+            })
+            .catch(error => {
+              console.log('Create error', error)
             })
         })
       }
