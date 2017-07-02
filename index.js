@@ -1,5 +1,6 @@
-const html = require('choo/html')
 const choo = require('choo')
+const listView = require('./listView')
+const Archive = require('./archive')
 
 const app = choo()
 app.use(store)
@@ -9,32 +10,15 @@ app.mount('ul#fileList')
 function store (state, emitter) {
   state.files = []
   function update() {
-    readFilesJson().then(files => {
-      state.files = files
-      emitter.emit('render')
-    })
+    fetch('/files.json')
+      .then(response => response.json())
+      .then(files => {
+        state.files = files
+        emitter.emit('render')
+      })
   }
   update() // Initial load
   emitter.on('update', update)
-}
-
-function readFilesJson () {
-  return fetch('/files.json').then(response => response.json())
-}
-
-function listView (state, emit) {
-  const { files } = state
-  return html`
-    <ul id="fileList">
-      ${files.map(file => {
-        return html`
-          <li>
-            <a href="/test1/${file}">${file}</a>
-          </li>
-        `
-      })}
-    </ul>
-  `
 }
 
 const buttonEl = document.querySelector('#createDat')
@@ -45,33 +29,14 @@ if (!window.DatArchive) {
   publishButtonEl.remove()
 } else {
   const url = 'dat://188e04da36894f212254b72d9c7e0d0fb6cb12574eabf2761d268cfe618d75aa/'
-  const archive = new DatArchive(url)
-
-  function updateFilesJson() {
-    const promise = archive.readdir('/test1')
-      .then(files => {
-        return archive.writeFile('/files.json', JSON.stringify(files))
-      })
-    return promise
-  }
-
-  archive.readdir('/')
-    .then(topFiles => {
-      if (topFiles.includes('test1')) {
-        return
-      }
-      return archive.mkdir('/test1')
-    })
+  const archive = new Archive(url)
+  archive.init()
     .then(() => {
       function clickHandler(state, emitter) {
         buttonEl.addEventListener('click', event => {
           const now = Date.now()
           const file = `/test1/${now}.txt`
           archive.writeFile(file, String(now))
-            .then(() => {
-              console.log(`Wrote ${file}`)
-              return updateFilesJson()
-            })
             .then(() => {
               emitter.emit('update')
             })
@@ -80,12 +45,11 @@ if (!window.DatArchive) {
       app.use(clickHandler)
 
       publishButtonEl.addEventListener('click', event => {
-        archive.commit()
+        archive.publish()
           .then(result => {
             console.log('Published', result)
           })
       })
     })
-
 }
 
