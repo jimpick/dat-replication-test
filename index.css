@@ -1,0 +1,9 @@
+.forkThisSite {
+  border: 1px solid red;
+  padding: 0.5em;
+}
+
+.forked {
+  border: 1px solid green;
+  padding: 0.5em;
+}

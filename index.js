@@ -11,7 +11,8 @@ app.mount('div#content')
 
 async function store (state, emitter) {
 
-  state.origin = document.location.origin
+  const origin = document.location.origin
+  state.origin = origin
   const sitesModel = new SitesModel(state.origin)
   await sitesModel.init()
 
@@ -50,6 +51,13 @@ async function store (state, emitter) {
   }
   emitter.on('createNewSite', createNewSite)
 
+  async function forkThisSite () {
+    console.log('Fork this site')
+    state.forkedArchive = await DatArchive.fork(origin)
+    emitter.emit('render')
+  }
+  emitter.on('forkThisSite', forkThisSite)
+
 }
 
 function contentView (state, emit) {
@@ -59,7 +67,7 @@ function contentView (state, emit) {
     if (state.info.isOwner) {
       button = createDatButton(state, emit)
     } else {
-      button = forkDirectoryDatButton(state, emit)
+      button = forkThisSiteButton(state, emit)
     }
   }
   return html`
@@ -71,22 +79,39 @@ function contentView (state, emit) {
   `
 }
 
-function createDatButton (state, emit) {
+function createDatButton (_, emit) {
   return html`
-    <button id="createDat" onclick=${() => emit('createNewSite')}>
+    <button onclick=${() => emit('createNewSite')}>
       Create Dat Site
     </button>
   `
 }
 
-function forkDirectoryDatButton (state, emit) {
+function forkThisSiteButton (state, emit) {
+  const { forkedArchive } = state
+  if (forkedArchive) {
+    const { url } = forkedArchive
+    return html`
+      <div class="forked">
+        <p>
+          Congratulations! You have successfully forked this site.
+          Click the link below to visit your version of this site.
+        </p>
+        <p>
+          <a href="${url}">${url}</a>
+        </p>
+      </div>
+    `
+  }
   return html`
-    <div>
+    <div class="forkThisSite">
       <p>
         You do not own this Dat archive, but you can fork your own
         version.
       </p>
-      <button id="forkDirectoryDat">Fork This</button>
+      <button onclick=${() => emit('forkThisSite')}>
+        Fork This
+      </button>
     </div>
   `
 }
