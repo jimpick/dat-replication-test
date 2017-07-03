@@ -10,12 +10,17 @@ app.route('/', contentView)
 app.mount('div#content')
 
 async function store (state, emitter) {
+
   state.origin = document.location.origin
+  const sitesModel = new SitesModel(state.origin)
+  await sitesModel.init()
+
   if (window.DatArchive) {
     state.localArchive = new DatArchive(state.origin)
     state.info = await state.localArchive.getInfo()
   }
   state.sites = []
+
   async function update () {
     const response = await fetch('/sites.json')
     state.sites = await response.json()
@@ -23,6 +28,28 @@ async function store (state, emitter) {
   }
   await update() // Initial load
   emitter.on('update', update)
+
+  async function createNewSite () {
+    const { sites, origin } = state
+    try {
+      const newArchive = new NewArchive()
+      const defaultTitle = `My Awesome DAT Web Site #${sites.length + 1}`
+      const info = await newArchive.create({
+        defaultTitle,
+        createdFrom: origin
+      })
+      await sitesModel.pushSite(info)
+      emitter.emit('update')
+    } catch (error) {
+      if (error.name === 'UserDeniedError') {
+        console.log(error.message)
+        return
+      }
+      console.log('Create error', error)
+    }
+  }
+  emitter.on('createNewSite', createNewSite)
+
 }
 
 function contentView (state, emit) {
@@ -46,7 +73,9 @@ function contentView (state, emit) {
 
 function createDatButton (state, emit) {
   return html`
-    <button id="createDat">Create Dat Site</button>
+    <button id="createDat" onclick=${() => emit('createNewSite')}>
+      Create Dat Site
+    </button>
   `
 }
 
@@ -61,36 +90,4 @@ function forkDirectoryDatButton (state, emit) {
     </div>
   `
 }
-
-const makeClickHandler = (sitesModel) => {
-  const func = (state, emitter) => {
-    const buttonEl = document.querySelector('#createDat')
-    buttonEl.addEventListener('click', async event => {
-      const { sites } = state
-      try {
-        const newArchive = new NewArchive()
-        const defaultTitle = `My Awesome DAT Web Site #${sites.length + 1}`
-        const info = await newArchive.create({
-          defaultTitle,
-          createdFrom: url
-        })
-        await sitesModel.pushSite(info)
-        emitter.emit('update')
-      } catch (error) {
-        console.log('Create error', error)
-      }
-    })
-  }
-  return func
-}
-
-async function run () {
-  const url = document.location.href
-  const sitesModel = new SitesModel(url)
-  await sitesModel.init()
-  app.use(makeClickHandler(sitesModel))
-}
-
-run()
-
 
