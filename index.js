@@ -22,9 +22,13 @@ async function store (state, emitter) {
 }
 
 function contentView (state, emit) {
+  let button = ''
+  if (window.DatArchive) {
+    button = createDatButton(state, emit)
+  }
   return html`
     <div id="content">
-      ${createDatButton(state, emit)}
+      ${button}
 
       ${listView(state, emit)}
     </div>
@@ -67,10 +71,6 @@ async function run () {
   app.use(makeClickHandler(sitesModel))
 }
 
-if (!window.DatArchive) {
-  const buttonEl = document.querySelector('#createDat')
-  buttonEl.remove()
-} else {
-  run()
-}
+run()
+
 

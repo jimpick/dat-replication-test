@@ -18,6 +18,9 @@ class SitesModel {
   async pushSite(info) {
     const createdAt = new Date().toISOString()
     const id = uuidv1() // Timestamped
+      // Swap fields to sort by time
+      // https://github.com/kelektiv/node-uuid/issues/75
+      .replace(/^(.{8})-(.{4})-(.{4})/, '$3-$2-$1')
     const file = `${sitesDir}/${id}.json`
     const { title, description, url } = info
     const data = JSON.stringify({
@@ -35,10 +38,12 @@ class SitesModel {
     const { archive } = this
     const sites = []
     const files = await archive.readdir(sitesDir)
-    for (const file of files) {
+    const sortedFiles = files.sort()
+    for (const file of sortedFiles) {
       const contents = await archive.readFile(`${sitesDir}/${file}`)
       try {
         const data = JSON.parse(contents)
+        data.id = file.replace(/\.json$/, '')
         sites.push(data)
       } catch (error) {
         console.log('Error parsing file', file, error)
