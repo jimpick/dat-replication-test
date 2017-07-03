@@ -10,11 +10,15 @@ app.route('/', contentView)
 app.mount('div#content')
 
 async function store (state, emitter) {
+  state.origin = document.location.origin
+  if (window.DatArchive) {
+    state.localArchive = new DatArchive(state.origin)
+    state.info = await state.localArchive.getInfo()
+  }
   state.sites = []
   async function update () {
     const response = await fetch('/sites.json')
-    const sites = await response.json()
-    state.sites = sites
+    state.sites = await response.json()
     emitter.emit('render')
   }
   await update() // Initial load
@@ -22,9 +26,14 @@ async function store (state, emitter) {
 }
 
 function contentView (state, emit) {
+
   let button = ''
-  if (window.DatArchive) {
-    button = createDatButton(state, emit)
+  if (window.DatArchive && state.info) {
+    if (state.info.isOwner) {
+      button = createDatButton(state, emit)
+    } else {
+      button = forkDirectoryDatButton(state, emit)
+    }
   }
   return html`
     <div id="content">
@@ -41,8 +50,19 @@ function createDatButton (state, emit) {
   `
 }
 
+function forkDirectoryDatButton (state, emit) {
+  return html`
+    <div>
+      <p>
+        You do not own this Dat archive, but you can fork your own
+        version.
+      </p>
+      <button id="forkDirectoryDat">Fork This</button>
+    </div>
+  `
+}
+
 const makeClickHandler = (sitesModel) => {
-  const url = document.location.href
   const func = (state, emitter) => {
     const buttonEl = document.querySelector('#createDat')
     buttonEl.addEventListener('click', async event => {

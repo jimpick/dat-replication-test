@@ -4,7 +4,7 @@ function listView (state, emit) {
   const { sites } = state
   return html`
     <ul id="siteList">
-      ${sites.map(site => {
+      ${sites && sites.map(site => {
         const { title, url } = site
         return html`
           <li>
